@@ -1,39 +1,39 @@
-import axios, {
-  AxiosError,
-  AxiosRequestConfig,
-} from 'axios'
-import { baseApiUrl } from './constants'
-
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { baseApiUrl } from './constants';
 
 const request = axios.create({ baseURL: baseApiUrl });
 
-const setHeaders = (config: any) => {
-  const token = localStorage.getItem('auth')
-  config.headers = {
-    ...config.headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
+const setHeaders = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+    const token = localStorage.getItem('auth_token');
 
-  return config
-}
+    // Ensure headers are always defined
+    config.headers = config.headers || {};
+    config.headers.Authorization = token ? `Bearer ${token}` : '';
+
+    return config;
+};
 
 request.interceptors.request.use(
-  (config: AxiosRequestConfig) => setHeaders(config),
-  (error: AxiosError) => Promise.reject(error)
-)
+    (config: InternalAxiosRequestConfig) => setHeaders(config),
+    (error: AxiosError) => {
+        console.error('Request Interceptor Error:', error.message);
+        return Promise.reject(error);
+    }
+);
 
 request.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response.status === 401) {
-      window.location.href = "/login";
-      localStorage.clear();
+    (response) => response,
+    (error: AxiosError) => {
+        const status = error.response?.status;
+        if (status === 401) {
+            console.warn('Unauthorized access, redirecting to login...');
+            localStorage.clear();
+            window.location.href = '/login';
+        } else {
+            console.error(`API error: ${status}`, error.response?.data);
+        }
+        return Promise.reject(error.response?.data || error.message);
     }
-    if (error) {
-      console.log('error');
-    }
-    return Promise.reject(error.response.data);
-  }
-)
+);
 
-export default request
+export default request;

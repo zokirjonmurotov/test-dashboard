@@ -1,6 +1,7 @@
 import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { useLogin } from "./services/use-login";
+import { useNavigate } from "react-router-dom";
 
 interface LoginFormInputs {
   username: string;
@@ -15,12 +16,15 @@ const LoginPage: React.FC = () => {
   } = useForm<LoginFormInputs>();
 
   const { mutate } = useLogin();
+  const navigate = useNavigate();
 
   const onSubmit: SubmitHandler<LoginFormInputs> = (data) => {
     mutate(data, {
       onSuccess: (data) => {
         console.log(data);
-        // localStorage.setItem('auth_token', data.token)
+        localStorage.setItem("auth_token", data.accessToken);
+        localStorage.setItem("refresh_token", data.refreshToken);
+        navigate("/carts");
       },
       onError: (error) => {
         console.log(error);

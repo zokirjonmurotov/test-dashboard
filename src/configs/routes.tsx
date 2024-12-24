@@ -8,6 +8,7 @@ import {
 import LoginPage from "../auth/login";
 import Carts from "../pages/carts";
 import Products from "../pages/products";
+import { useGetMe } from "../services/queries/use-get-me";
 
 /**
  * Higher-order component for route protection.
@@ -16,8 +17,22 @@ import Products from "../pages/products";
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const authToken = localStorage.getItem("auth_token");
-  return authToken ? <>{children}</> : <Navigate to="/login" replace />;
+  const { data, isLoading, isError } = useGetMe();
+
+  // Handle loading state
+  if (isLoading) {
+    return <p>Loading...</p>; // Show a loading spinner or placeholder here
+  }
+
+  // Handle errors or unauthorized access
+  if (isError || !data?.id) {
+    console.warn("Unauthorized access, redirecting to login...");
+    localStorage.clear();
+    return <Navigate to="/login" replace />;
+  }
+
+  // If authenticated, render the children
+  return <>{children}</>;
 };
 
 // Route configuration object
